@@ -2,4 +2,4 @@
 
 rm /etc/ssh/ssh_host_*
 ssh-keygen -A
-exec /usr/sbin/sshd -D -e
+exec /usr/sbin/sshd -D -e -p 1022
