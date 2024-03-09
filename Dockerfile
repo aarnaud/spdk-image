@@ -18,7 +18,7 @@ ENV PYTHONPATH=/usr/local/lib/python3.11/site-packages/
 ENV LD_LIBRARY_PATH=/usr/local/lib
 COPY --from=builder /rootfs/ /usr/local/
 COPY ./entrypoint-sshd.sh /
-RUN mkdir /var/run/sshd /root/.ssh
+RUN mkdir /var/run/sshd
 RUN echo 'alias zdb="chroot /host /usr/local/sbin/zdb"' >> .bashrc
 RUN echo 'alias zfs="chroot /host /usr/local/sbin/zfs"' >> .bashrc
 RUN echo 'alias zpool="chroot /host /usr/local/sbin/zpool"' >> .bashrc
