@@ -17,7 +17,7 @@ RUN apt-get update && apt-get install -y python3-full python3-pip libibverbs1 li
 RUN apt-get install -y --no-install-recommends zfsutils-linux && apt-get clean
 RUN python3 -m pip install configshell-fb --force-reinstall --break-system-packages
 COPY --from=builder /rootfs/ /tmp/spdk
-ENV PYTHONPATH=/usr/lib/python3.11/site-packages
+RUN echo "PYTHONPATH=/usr/lib/python3.11/site-packages" >> /etc/environment
 RUN cp -r /tmp/spdk/* /usr/ && rm -rf /tmp/spdk
 COPY ./entrypoint-sshd.sh /
 RUN mkdir /var/run/sshd
