@@ -12,8 +12,12 @@ RUN make
 RUN make install
 
 FROM debian:12
-RUN apt-get update && apt-get install -y python3-full python3-pip libibverbs1 librdmacm1 liburing2 libfuse3-3 libaio1
+RUN apt-get update && apt-get install -y python3-full python3-pip libibverbs1 librdmacm1 liburing2 libfuse3-3 libaio1 dumb-init openssh-server
 RUN python3 -m pip install configshell-fb --force-reinstall --break-system-packages
 ENV PYTHONPATH=/usr/local/lib/python3.11/site-packages/
 ENV LD_LIBRARY_PATH=/usr/local/lib
 COPY --from=builder /rootfs/ /usr/local/
+COPY ./entrypoint-sshd.sh /
+RUN echo 'alias zdb="chroot /host /usr/local/sbin/zdb"' >> .bashrc
+RUN echo 'alias zfs="chroot /host /usr/local/sbin/zfs"' >> .bashrc
+RUN echo 'alias zpool="chroot /host /usr/local/sbin/zpool"' >> .bashrc
