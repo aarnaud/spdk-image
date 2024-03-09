@@ -12,13 +12,12 @@ RUN make
 RUN make install
 
 FROM debian:12
+RUN sed -i 's/Components: main/Components: main contrib/g' /etc/apt/sources.list.d/debian.sources
 RUN apt-get update && apt-get install -y python3-full python3-pip libibverbs1 librdmacm1 liburing2 libfuse3-3 libaio1 dumb-init openssh-server
+RUN apt-get install -y --no-install-recommends zfsutils-linux && apt-get clean
 RUN python3 -m pip install configshell-fb --force-reinstall --break-system-packages
-ENV PYTHONPATH=/usr/local/lib/python3.11/site-packages/
-ENV LD_LIBRARY_PATH=/usr/local/lib
-COPY --from=builder /rootfs/ /usr/local/
+COPY --from=builder /rootfs/ /tmp/spdk
+ENV PYTHONPATH=/usr/lib/python3.11/site-packages
+RUN cp -r /tmp/spdk/* /usr/ && rm -rf /tmp/spdk
 COPY ./entrypoint-sshd.sh /
 RUN mkdir /var/run/sshd
-RUN echo 'alias zdb="chroot /host /usr/local/sbin/zdb"' >> .bashrc
-RUN echo 'alias zfs="chroot /host /usr/local/sbin/zfs"' >> .bashrc
-RUN echo 'alias zpool="chroot /host /usr/local/sbin/zpool"' >> .bashrc

@@ -1,0 +1,112 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ssh-dir-spdk
+  namespace: kube-system
+data:
+  authorized_keys: |
+    ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCb4rTNCbF5emkZyymyo1ojlGTyqH6+4b/lWN9m3er1nYIiVJ25iEzQpMoitKbgReCORZQYjWiwMi0t/qyphZBx+ofTOedZg51Yz9qvrDqbgsxzxvan6TL6Y2U8ZFIJEEIbvkr1FHXccvSRCfy65R6PkTwWyI6bi2sE4OH+ZcBPfuZEiTF0rCEJy5LP1gi3Ihf55QGM3RK3NezEwqxwFHch3iNsb8O4ROb/wN2PzF91iyaiT8tHFQ9/wBozF/e9mGYXi0NoHJ5gwrMTqGynKkV0mDz+Ed8vvmqkSRC8Ic3PRgfqdBYq8cjHZdy3VygRY42YjVH3eTgKhrJp5Lxh40q/zBryZUgB/ZcNVUxDYmgsYfMF8DdB5xR/+9kCMPzQ9wZ6xJLYX/dv4MvL9wQyw+7Al1Mhv2P26BxV7/996vUboxFcAwGQcQ/VGViPDQQNBBbRbs1q/V107gVMdTNwO1CGLWfQldsnhmvNQ+0Ij/oeyIUVkhOv5l1V6eeD9XChzV8= democratic-csi
+    ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDK8jeUNU59zCpLEYNJyyPNRgTPXXZowo4Fg8xI33WCHeIZqPj6OHN5WtWLgHt4v+uwB0KxqHOtO8tB3qfONSbKFsniF8MrboEVxOJgz37ACDd+pZqGsbtJU+H8+c0Ompk11kpB+NT+x6IlJvgpFEZTBvDV37QOzME1YiBB4oJqWL5BP25QPLIGjHdWAjp6sQichd7RACvjAShGOsJs3M94hL4uu/a4ggOnxX6p4lWQo7mpg4ytw+yghsDyLX0lM/cyUJp7BkGTya9VapHDOuQgS4HOYz+I3lpmAvUrxLf7qQ1mpQHUnrCcXaVYf5eKdPQKSv7wGIsQ5P20wiX+8xgj1SvoSqmswHDn5fl01QpOMryYfWkkVlLho5lmpo7Lg23YlfQTuowktuUfAM8Ji/HO4tzaIK/sPXX3ZmfMFkBbZEaQsoRkwEMSHtkh4Xo15UjQ2cEntHCmd0ml38aqxtwn31fhT5pWYA9vOR90OkNiFNLkWZq82722WVRsCVPQjZwYs61vLi/LzOoEEiYuKhBfWSrXqUqS+VB/2KVWSxQnC55jxzqjQWmhFsvuXEPGtLgqpMQvr4hhzstp2B/8nBRmX2EBtsAwCZiwDCHVs+LM9WEyhAqemNamy2XtIWWmXTZUa2vg+zkkWSZOxxuaDkTZxm+Bpjrc2kpuA088HTL8Iw== cardno:000604946386
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  labels:
+    app: spdk-tgt
+  name: spdk-tgt
+  namespace: kube-system
+spec:
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app: spdk-tgt
+  template:
+    metadata:
+      labels:
+        app: spdk-tgt
+    spec:
+      nodeSelector:
+        node-role.kubernetes.io/storage: ""
+      containers:
+        - name: spdk-tgt
+          image: ghcr.io/aarnaud/spdk-image:latest
+          imagePullPolicy: Always
+          command:
+            - spdk_tgt
+          resources:
+            limits:
+              hugepages-2Mi: 2048Mi
+              memory: 4Gi
+            requests:
+              hugepages-2Mi: 2048Mi
+              memory: 4Gi
+          securityContext:
+            allowPrivilegeEscalation: true
+            privileged: true
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+            - name: device-dir
+              mountPath: /dev
+            - name: socket-dir
+              mountPath: /var/tmp
+            - name: spdk-config
+              mountPath: /var/lib/spdk
+        - name: sshd
+          image: ghcr.io/aarnaud/spdk-image:latest
+          imagePullPolicy: Always
+          command:
+            - /entrypoint-sshd.sh
+          resources: {}
+          securityContext:
+            allowPrivilegeEscalation: true
+            privileged: true
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+            - name: hostfs
+              mountPath: /host
+            - name: device-dir
+              mountPath: /dev
+            - name: socket-dir
+              mountPath: /var/tmp
+            - name: spdk-config
+              mountPath: /var/lib/spdk
+            - name: ssh-dir
+              mountPath: /root/.ssh/authorized_keys
+              subPath: authorized_keys
+
+      dnsPolicy: ClusterFirstWithHostNet
+      hostIPC: true
+      hostPID: true
+      hostNetwork: true
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext:
+        runAsNonRoot: false
+        seccompProfile:
+          type: RuntimeDefault
+      terminationGracePeriodSeconds: 30
+      volumes:
+        - name: hostfs
+          hostPath:
+            path: /
+        - name: device-dir
+          hostPath:
+            path: /dev
+        - name: ssh-dir
+          configMap:
+            name: ssh-dir-spdk
+            defaultMode: 0700
+        - name: socket-dir
+          emptyDir: {}
+        - name: socket-dir
+          emptyDir: { }
+        - name: spdk-config
+          hostPath:
+            path: /var/lib/spdk
+  updateStrategy:
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
+    type: RollingUpdate
