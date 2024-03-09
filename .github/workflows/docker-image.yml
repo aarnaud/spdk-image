@@ -45,7 +45,6 @@ jobs:
           [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
           # Use Docker `latest` tag convention
           [ "$VERSION" == "master" ] && VERSION=latest
-          VERSION=$VERSION-${{ matrix.kernel_version }}
           echo IMAGE_ID=$IMAGE_ID
           echo VERSION=$VERSION
           docker build . --file Dockerfile --tag $IMAGE_NAME --label "runnumber=${GITHUB_RUN_ID}"
