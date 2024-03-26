@@ -13,7 +13,7 @@ RUN make install
 
 FROM debian:12
 RUN sed -i 's/Components: main/Components: main contrib/g' /etc/apt/sources.list.d/debian.sources
-RUN apt-get update && apt-get install -y python3-full python3-pip libibverbs1 librdmacm1 liburing2 libfuse3-3 libaio1 dumb-init openssh-server
+RUN apt-get update && apt-get install -y python3-full python3-pip libibverbs1 librdmacm1 liburing2 libfuse3-3 libaio1 dumb-init openssh-server libncurses6
 RUN apt-get install -y --no-install-recommends zfsutils-linux && apt-get clean
 RUN python3 -m pip install configshell-fb --force-reinstall --break-system-packages
 COPY --from=builder /rootfs/ /tmp/spdk
