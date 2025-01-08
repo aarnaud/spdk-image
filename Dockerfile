@@ -1,6 +1,6 @@
 FROM debian:12 as builder
 RUN apt-get update && apt-get install -y sudo git build-essential python3-full pkg-config meson python3-pyelftools python3-configshell-fb libdpdk-dev liburing-dev patchelf
-RUN git clone https://github.com/spdk/spdk --recursive /src
+RUN git clone --branch v24.09 https://github.com/spdk/spdk --recursive /src
 WORKDIR /src
 RUN mkdir /rootfs
 RUN python3 -m venv venv
