@@ -1,5 +1,5 @@
 FROM debian:12 as builder
-RUN apt-get update && apt-get install -y sudo git build-essential python3-full pkg-config meson python3-pyelftools python3-configshell-fb libdpdk-dev liburing-dev patchelf
+RUN apt-get update && apt-get install -y sudo curl git build-essential python3-full pkg-config meson python3-pyelftools python3-configshell-fb libdpdk-dev liburing-dev patchelf
 RUN git clone --branch v25.05 https://github.com/spdk/spdk --recursive /src
 WORKDIR /src
 RUN mkdir /rootfs
@@ -18,5 +18,8 @@ RUN apt-get install -y --no-install-recommends zfsutils-linux && apt-get clean
 COPY --from=builder /rootfs/ /tmp/spdk
 RUN echo "PYTHONPATH=/usr/lib/python3.11/site-packages" >> /etc/environment
 RUN cp -r /tmp/spdk/* /usr/ && rm -rf /tmp/spdk
+COPY --from=builder /src/python /src/python
+COPY --from=builder /src/scripts /src/scripts
+RUN pip install --break-system-packages /src/python/ && rm -rf /src
 COPY ./entrypoint-sshd.sh /
 RUN mkdir /var/run/sshd
